@@ -1,86 +1,67 @@
-#!/usr/bin/python3
-""" LFUCache module
+#!/usr/bin/env python3
 """
+LFU cache implementing class
+"""
+BaseCaching = __import__('base_caching').BaseCaching
+LRUCache = __import__('3-lru_cache').LRUCache
 
-from base_caching import BaseCaching
 
 class LFUCache(BaseCaching):
-    """ LFUCache inherits from BaseCaching and is a caching system using LFU algorithm.
     """
+    The `LFUCache` class is a cache implementation that uses the
+    Least-Frequently-Used (LFU) eviction policy.
+    """
+
     def __init__(self):
-        """ Initialize the LFU cache.
+        """
+        The above function is the constructor method for a class.
         """
         super().__init__()
-        self.freq_count = {}  # To keep track of the frequency count of each key
+        self.recent_time = {}
+        # self.recen
 
     def put(self, key, item):
-        """ Add an item to the cache using LFU algorithm.
         """
-        if key is not None and item is not None:
-            if len(self.cache_data) >= BaseCaching.MAX_ITEMS:
-                # Find the least frequency used item
-                lfu_key = min(self.freq_count, key=lambda k: self.freq_count[k])
-                if len([k for k, v in self.freq_count.items() if v == self.freq_count[lfu_key]]) > 1:
-                    # If more than 1 item with the least frequency, use LRU algorithm to discard the least recently used
-                    lru_key = min(self.order, key=lambda k: self.order.index(k))
-                    del self.cache_data[lru_key]
-                    del self.freq_count[lru_key]
-                    self.order.remove(lru_key)
-                    print("DISCARD: {}".format(lru_key))
-                else:
-                    del self.cache_data[lfu_key]
-                    self.order.remove(lfu_key)
-                    print("DISCARD: {}".format(lfu_key))
-                    del self.freq_count[lfu_key]
-            self.cache_data[key] = item
-            self.order.append(key)
-            self.freq_count[key] = self.freq_count.get(key, 0) + 1
+        The function `put` adds a key-value pair to a cache,
+        and if the cache is full, it removes the
+        LFU item before adding the new item.
+        """
+        if key is None or item is None:
+            return
+        if len(self.cache_data) >= BaseCaching.MAX_ITEMS and \
+                key not in self.cache_data.keys():
+            my_list, lowest = {}, sorted(self.recent_time.values())[0]
+            my_key = ""
+            for k, v in self.recent_time.items():
+                if v == lowest:
+                    my_list[k] = v
+                    my_key = k
+            if len(my_list) > 1:
+                LRUCache.put(self, key, item)
+            else:
+                self.recent_time.pop(my_key, None)
+                self.cache_data.pop(my_key, None)
+                print(f"DISCARD: {my_key}")
+        self.cache_data[key] = item
+        if key not in self.recent_time.keys():
+            self.recent_time[key] = 0
+
+        self.recent_time[key] += 1
+        # self.recent_time[key] = 1
+        # print(f"recent time = {self.recent_time}")
 
     def get(self, key):
-        """ Get an item from the cache by key.
         """
-        if key is not None and key in self.cache_data:
-            # Update the frequency count of the key
-            self.freq_count[key] += 1
-            return self.cache_data[key]
-        return None
-
-# Driver code
-if __name__ == "__main__":
-    my_cache = LFUCache()
-
-    my_cache.put("A", "Hello")
-    my_cache.put("B", "World")
-    my_cache.put("C", "Holberton")
-    my_cache.put("D", "School")
-    my_cache.print_cache()
-    print(my_cache.get("B"))
-    my_cache.put("E", "Battery")
-    my_cache.print_cache()
-    my_cache.put("C", "Street")
-    my_cache.print_cache()
-    print(my_cache.get("A"))
-    print(my_cache.get("B"))
-    print(my_cache.get("C"))
-    my_cache.put("F", "Mission")
-    my_cache.print_cache()
-    my_cache.put("G", "San Francisco")
-    my_cache.print_cache()
-    my_cache.put("H", "H")
-    my_cache.print_cache()
-    my_cache.put("I", "I")
-    my_cache.print_cache()
-    print(my_cache.get("I"))
-    print(my_cache.get("H"))
-    print(my_cache.get("I"))
-    print(my_cache.get("H"))
-    print(my_cache.get("I"))
-    print(my_cache.get("H"))
-    my_cache.put("J", "J")
-    my_cache.print_cache()
-    my_cache.put("K", "K")
-    my_cache.print_cache()
-    my_cache.put("L", "L")
-    my_cache.print_cache()
-    my_cache.put("M", "M")
-    my_cache.print_cache()
+        The function retrieves the value associated with a given
+        key from a cache data structure.
+        """
+        value = None
+        if key is None:
+            return None
+        try:
+            value = self.cache_data.get(key)
+            if key in self.recent_time.keys():
+                self.recent_time[key] += 1
+        except KeyError:
+            pass
+        return value
